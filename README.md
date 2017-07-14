@@ -13,7 +13,7 @@ Webhook: https://rapidapi.com/package/Dropbox/functions/webhookEvent
 upload_file
 
 ## Endpoints used for Facebook
-upload_file
+upload_file: https://rapidapi.com/package/FacebookGraphAPI/functions/addPhotoToAlbum
 
 ## Endpoints used for Twitter
 upload_file
