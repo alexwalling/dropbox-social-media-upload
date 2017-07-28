@@ -59,11 +59,9 @@ function checkForUpload(){
 		console.log('SUCCESS');
 		files = payload[0].entries;
 		if(files.length > 0){
-			console.log(files);
-			console.log(files[0].path_lower);
-			if(files[0]['.tag'] == 'file'){
-				console.log('DOWNLOAD');
-				downloadFile(files[0].path_lower);
+			for(var i = 0; i < files.length; i++)
+			if(files[i]['.tag'] == 'file'){
+				downloadFile(files[i].path_lower);
 			}
 		}
 		
