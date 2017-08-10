@@ -86,8 +86,6 @@ function checkForUpload(){
 						let id = enroll_employee(filename, name);
 						console.log(id);
 						console.log(name);
-						employee_names.push(name);
-						employee_ids.push(id);
 					}).catch(res => {
 						console.log(res);
 					});
@@ -182,15 +180,20 @@ function update_collection(collection_id, enrollment_id){
 function enroll_employee(img_path, employee_name){
 	console.log('ENROLLING: ' + employee_name + " " + typeof employee_name);
 	console.log('IMG PATH: ' + img_path + " " + typeof img_path);
-
+	let employee_id;
 	unirest.post("https://trueface.p.mashape.com/enroll")
 		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
 		.attach("img0", fs.createReadStream(img_path))
 		.field("name", employee_name)
 		.end(function (result) {
 			console.log(result.status, result.headers, result.body);
-			//return result.body.data.enrollment_id;
+			employee_id = result.body.data.enrollment_id;
+			employee_names.push(employee_name);
+			employee_ids.push(employee_id);
+			console.log(employee_ids);
 		});
+
+		
 
 	/* This code from RapidAPI doesn't seem to work
 	unirest.post("https://trueface.p.mashape.com/enroll")
