@@ -30,9 +30,6 @@ rapid.call('Dropbox', 'getFolderContents', {
 	console.log(payload);
 });
 
-
-
-
 /*
 	Download the image
 */
@@ -81,7 +78,6 @@ function checkForUpload(){
 				name = filename.substring(0, ind);
 				if(!employee_names.includes(name)){
 					downloadFile(path).then(res => {
-						console.log('HELLO ITS ME' + res);
 						//need promise here
 						let id = enroll_employee(filename, name);
 						console.log(id);
@@ -92,7 +88,6 @@ function checkForUpload(){
 				} else {
 					let employee_id = employee_ids[employee_names.indexOf(name)];
 					console.log(employee_id);
-					console.log('UPDATE BITCHES')
 					//update_employee(path, name);
 				}
 			}
@@ -128,7 +123,6 @@ rapid.listen('Dropbox', 'webhookEvent', {
 
 })
 .on('message', (message) => {
-	console.log('UPDATE');
 	checkForUpload();
 })
 .on('error', (error) => {
@@ -178,8 +172,8 @@ function update_collection(collection_id, enrollment_id){
 	INIT enrollment for employee
 */
 function enroll_employee(img_path, employee_name){
-	console.log('ENROLLING: ' + employee_name + " " + typeof employee_name);
-	console.log('IMG PATH: ' + img_path + " " + typeof img_path);
+	console.log('ENROLLING: ' + employee_name);
+	console.log('IMG PATH: ' + img_path);
 	let employee_id;
 	unirest.post("https://trueface.p.mashape.com/enroll")
 		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
@@ -190,10 +184,7 @@ function enroll_employee(img_path, employee_name){
 			employee_id = result.body.data.enrollment_id;
 			employee_names.push(employee_name);
 			employee_ids.push(employee_id);
-			console.log(employee_ids);
 		});
-
-		
 
 	/* This code from RapidAPI doesn't seem to work
 	unirest.post("https://trueface.p.mashape.com/enroll")
@@ -218,6 +209,7 @@ function enroll_employee(img_path, employee_name){
 */
 function update_employee(img_path, employee_id){
 	console.log('UPDATING: ' + employee_id);
+	console.log('IMG PATH: ' + img_path);
 	unirest.put("https://trueface.p.mashape.com/enroll")
 		.header("X-Mashape-Key", "kkLAE9tdKfmshARl9UVANBrYk4RKp1xDfWFjsnimWVdTYzp6HS")
 		.field("enrollment_id", employee_id)
