@@ -86,9 +86,13 @@ function checkForUpload(){
 						console.log(res);
 					});
 				} else {
-					let employee_id = employee_ids[employee_names.indexOf(name)];
-					console.log(employee_id);
-					//update_employee(path, name);
+					downloadFile(path).then(res => {
+						//need promise here
+						let employee_id = employee_ids[employee_names.indexOf(name)];
+						update_employee(filename, employee_id);
+					}).catch(res => {
+						console.log(res);
+					});
 				}
 			}
 		}
@@ -211,7 +215,7 @@ function update_employee(img_path, employee_id){
 	console.log('UPDATING: ' + employee_id);
 	console.log('IMG PATH: ' + img_path);
 	unirest.put("https://trueface.p.mashape.com/enroll")
-		.header("X-Mashape-Key", "kkLAE9tdKfmshARl9UVANBrYk4RKp1xDfWFjsnimWVdTYzp6HS")
+		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
 		.field("enrollment_id", employee_id)
 		.attach("img0", fs.createReadStream(img_path))
 		.end(function (result) {
