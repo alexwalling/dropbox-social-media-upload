@@ -1,76 +1,89 @@
+require('dotenv').config();
+
 const RapidAPI = require('rapidapi-connect');
-const rapid = new RapidAPI("*************************", "********************************");
-var https = require('https');
-var fs = require('fs');
-var unirest = require('unirest');
+const rapid = new RapidAPI(process.env.APPLICATION, process.env.RAPIDAPI);
+const https = require('https');
+const fs = require('fs');
+const unirest = require('unirest');
 
-var cursor;
-var employee_names = [];
-var employee_ids = [];
-var collection;
-
-var token = '***********************';
-var mashape_token = '*****************************';
-var mashape_token2 = '********************************';
-
+let cursor;
+let employee_names = [];
+let employee_ids = [];
+let collection;
 
 /*
+	---------------------
 	Dropbox file handling
+	---------------------
 */
 
 /*
 	INIT CURSOR
 */
 rapid.call('Dropbox', 'getFolderContents', { 
-	'accessToken': token,
+	'accessToken': process.env.RAPIDAPI_TOKEN,
 	'folderPath': '/rapid-api-upload'
 }).on('success', (payload)=>{
 	cursor = payload[0].cursor;
+	//console.log(payload[0].entries);
 }).on('error', (payload)=>{
 	console.log(payload);
 });
 
+
+
+
+/*
+	Download the image
+*/
 function downloadFile(path_to_file){
+	console.log(path_to_file);
 	return new Promise((resolve, reject) => {
 		rapid.call('Dropbox', 'downloadFile', { 
-			'accessToken': token,
+			'accessToken': process.env.RAPIDAPI_TOKEN,
 			//need to use path_to_file instead
 			'filePath': path_to_file
 		}).on('success', (payload)=>{
 			//make the file based on the filename passed in
-			var filename = path_to_file.replace(/^.*[\\\/]/, '');
-			var file = fs.createWriteStream(filename);
-			var request = https.get(payload.file, function(response) {
+			let filename = path_to_file.replace(/^.*[\\\/]/, '');
+			let file = fs.createWriteStream(filename);
+			let request = https.get(payload.file, function(response) {
 				response.pipe(file);
 			});
 			getCursor();
+			file.on('finish', function() {
+				resolve('success');
+			});
+
+			//resolve('success');
 		}).on('error', (payload)=>{
-			console.log(payload);
+			reject('you suck')
 		});
-		resolve('success');
 	});
 }
 
 /*
-	checking if anything has changed in out upload folder
+	checking if anything has changed in the designated folder. 
 */
 function checkForUpload(){
 	rapid.call('Dropbox', 'paginateFolderContents', { 
-		'accessToken': token,
+		'accessToken': process.env.RAPIDAPI_TOKEN,
 		'cursor': cursor
 	}).on('success', (payload)=>{
 		files = payload[0].entries;
 		if(files.length > 0){
-			for(var i = 0; i < files.length; i++)
+			for(let i = 0; i < files.length; i++)
 			if(files[i]['.tag'] == 'file'){
 				path = files[i].path_lower
 				filename = path.replace(/^.*[\\\/]/, '');
+				//file name -> employee name
 				ind = filename.indexOf('-');
 				name = filename.substring(0, ind);
 				if(!employee_names.includes(name)){
 					downloadFile(path).then(res => {
+						console.log('HELLO ITS ME' + res);
 						//need promise here
-						var id = enroll_employee(filename, name);
+						let id = enroll_employee(filename, name);
 						console.log(id);
 						console.log(name);
 						employee_names.push(name);
@@ -79,7 +92,10 @@ function checkForUpload(){
 						console.log(res);
 					});
 				} else {
-					update_employee(path, name);
+					let employee_id = employee_ids[employee_names.indexOf(name)];
+					console.log(employee_id);
+					console.log('UPDATE BITCHES')
+					//update_employee(path, name);
 				}
 			}
 		}
@@ -94,7 +110,7 @@ function checkForUpload(){
 */
 function getCursor(){
 	rapid.call('Dropbox', 'getFolderContents', { 
-	'accessToken': token,
+	'accessToken': process.env.RAPIDAPI_TOKEN,
 	'folderPath': '/rapid-api-upload'
 	}).on('success', (payload)=>{
 		cursor = payload[0].cursor;
@@ -105,15 +121,16 @@ function getCursor(){
 
 
 /*
-	listening for webhooks
+	Webhook
 */
 rapid.listen('Dropbox', 'webhookEvent', { 
-	'token': token
+	'token': process.env.RAPIDAPI_TOKEN
 })
 .on('join', () => {
 
 })
 .on('message', (message) => {
+	console.log('UPDATE');
 	checkForUpload();
 })
 .on('error', (error) => {
@@ -126,39 +143,97 @@ rapid.listen('Dropbox', 'webhookEvent', {
 
 
 /*
+	--------------------------------------------
 	TrueFace.ai Facial Recognition Functionality
+	--------------------------------------------
 */
 
 /*
 	INIT collection for all office employees
 */
+/*
 unirest.post("https://trueface.p.mashape.com/collection")
-.header("X-Mashape-Key", mashape_token)
-.header("X-Mashape-Host", "trueface.p.mashape.com")
-.header("Content-Type", "application/x-www-form-urlencoded")
-.send("name=Office Employees")
-.send("")
-.end(function (result) {
-  collection = result.body.data.collection_id;
-});
+	.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
+	.header("Content-Type", "application/x-www-form-urlencoded")
+	.header("Accept", "application/json")
+	.send("name=Office Employees")
+	.end(function (result) {
+		console.log(result.status, result.headers, result.body);
+	});
+*/
+/*
+	update collection of employees
+*/
+function update_collection(collection_id, enrollment_id){
+	unirest.put("https://trueface.p.mashape.com/collection")
+		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
+		.header("Content-Type", "application/x-www-form-urlencoded")
+		.header("Accept", "application/json")
+		.send("collection_id=<required>")
+		.send("enrollment_id=<required>")
+		.end(function (result) {
+		  console.log(result.status, result.headers, result.body);
+		});
+}
 
+/*
+	INIT enrollment for employee
+*/
 function enroll_employee(img_path, employee_name){
+	console.log('ENROLLING: ' + employee_name + " " + typeof employee_name);
+	console.log('IMG PATH: ' + img_path + " " + typeof img_path);
+
 	unirest.post("https://trueface.p.mashape.com/enroll")
-		.header("X-Mashape-Key", mashape_token2)
+		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN_2)
 		.attach("img0", fs.createReadStream(img_path))
 		.field("name", employee_name)
 		.end(function (result) {
-		  return result.body.data.enrollment_id;
+			console.log(result.status, result.headers, result.body);
+			//return result.body.data.enrollment_id;
 		});
+
+	/* This code from RapidAPI doesn't seem to work
+	unirest.post("https://trueface.p.mashape.com/enroll")
+		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN)
+		.header("X-Mashape-Host", "trueface.p.mashape.com")
+		.header("Content-Type", "application/x-www-form-urlencoded")
+		.send("img0=<required>")
+		.send("img1=")
+		.send("img2=")
+		.send("img3=")
+		.send("name=<required>")
+		.send("")
+		.end(function (result) {
+		  console.log(result.status, result.headers, result.body);
+		});
+	*/
 
 }
 
-function update_employee(img_path, employee_name){
+/*
+	Update enrollment for existing employee
+*/
+function update_employee(img_path, employee_id){
+	console.log('UPDATING: ' + employee_id);
 	unirest.put("https://trueface.p.mashape.com/enroll")
-		.header("X-Mashape-Key", mashape_token2)
-		.field("enrollment_id", employee_name)
+		.header("X-Mashape-Key", "kkLAE9tdKfmshARl9UVANBrYk4RKp1xDfWFjsnimWVdTYzp6HS")
+		.field("enrollment_id", employee_id)
 		.attach("img0", fs.createReadStream(img_path))
 		.end(function (result) {
 		  console.log(result.status, result.headers, result.body);
 		});
+
+
+	/* This code from RapidAPI doesn't seem to work
+	unirest.put("https://trueface.p.mashape.com/enroll")
+		.header("X-Mashape-Key", process.env.MASHAPE_TOKEN)
+		.header("X-Mashape-Host", "trueface.p.mashape.com")
+		.header("Content-Type", "application/x-www-form-urlencoded")
+		.send("enrollment_id=")
+		.send("img0=<required>")
+		.send("")
+		.end(function (result) {
+		  console.log(result.status, result.headers, result.body);
+		});
+	*/
 }
