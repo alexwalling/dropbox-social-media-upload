@@ -69,30 +69,31 @@ function checkForUpload(){
 	}).on('success', (payload)=>{
 		files = payload[0].entries;
 		if(files.length > 0){
-			for(let i = 0; i < files.length; i++)
-			if(files[i]['.tag'] == 'file'){
-				path = files[i].path_lower
-				filename = path.replace(/^.*[\\\/]/, '');
-				//file name -> employee name
-				ind = filename.indexOf('-');
-				name = filename.substring(0, ind);
-				if(!employee_names.includes(name)){
-					downloadFile(path).then(res => {
-						//need promise here
-						let id = enroll_employee(filename, name);
-						console.log(id);
-						console.log(name);
-					}).catch(res => {
-						console.log(res);
-					});
-				} else {
-					downloadFile(path).then(res => {
-						//need promise here
-						let employee_id = employee_ids[employee_names.indexOf(name)];
-						update_employee(filename, employee_id);
-					}).catch(res => {
-						console.log(res);
-					});
+			for(let i = 0; i < files.length; i++){
+				if(files[i]['.tag'] == 'file'){
+					path = files[i].path_lower
+					filename = path.replace(/^.*[\\\/]/, '');
+					//file name -> employee name
+					ind = filename.indexOf('-');
+					name = filename.substring(0, ind);
+					if(!employee_names.includes(name)){
+						downloadFile(path).then(res => {
+							//need promise here
+							let id = enroll_employee(filename, name);
+							console.log(id);
+							console.log(name);
+						}).catch(res => {
+							console.log(res);
+						});
+					} else {
+						downloadFile(path).then(res => {
+							//need promise here
+							let employee_id = employee_ids[employee_names.indexOf(name)];
+							update_employee(filename, employee_id);
+						}).catch(res => {
+							console.log(res);
+						});
+					}
 				}
 			}
 		}
@@ -186,8 +187,10 @@ function enroll_employee(img_path, employee_name){
 		.end(function (result) {
 			console.log(result.status, result.headers, result.body);
 			employee_id = result.body.data.enrollment_id;
-			employee_names.push(employee_name);
-			employee_ids.push(employee_id);
+			if(result.body.data.enrollment_id == 'enrollment processed successfully'){
+				employee_names.push(employee_name);
+				employee_ids.push(employee_id);
+			}
 		});
 
 	/* This code from RapidAPI doesn't seem to work
