@@ -25,7 +25,36 @@ rapid.call('Dropbox', 'getFolderContents', {
 	'folderPath': '/rapid-api-upload'
 }).on('success', (payload)=>{
 	cursor = payload[0].cursor;
-	//console.log(payload[0].entries);
+	files = payload[0].entries;
+	//console.log(files);
+	for (var i = 0, len = files.length; i < len; i++) {
+  		console.log(files[i]['.tag']);
+  		console.log(files[i].name);
+  		console.log(files[i].path_lower);
+  		path = files[i].path_lower;
+  		filename = path.replace(/^.*[\\\/]/, '');
+		//file name -> employee name
+		ind = filename.indexOf('-');
+		name = filename.substring(0, ind);
+		if(!employee_names.includes(name)){
+			downloadFile(path).then(res => {
+				//need promise here
+				let id = enroll_employee(filename, name);
+				console.log(id);
+				console.log(name);
+			}).catch(res => {
+				console.log(res);
+			});
+		} else {
+			downloadFile(path).then(res => {
+				//need promise here
+				let employee_id = employee_ids[employee_names.indexOf(name)];
+				update_employee(filename, employee_id);
+			}).catch(res => {
+				console.log(res);
+			});
+		}
+	}
 }).on('error', (payload)=>{
 	console.log(payload);
 });
@@ -77,6 +106,7 @@ function checkForUpload(){
 					ind = filename.indexOf('-');
 					name = filename.substring(0, ind);
 					if(!employee_names.includes(name)){
+						console.log("ENROLL");
 						downloadFile(path).then(res => {
 							//need promise here
 							let id = enroll_employee(filename, name);
@@ -86,6 +116,7 @@ function checkForUpload(){
 							console.log(res);
 						});
 					} else {
+						console.log("UPDATE");
 						downloadFile(path).then(res => {
 							//need promise here
 							let employee_id = employee_ids[employee_names.indexOf(name)];
