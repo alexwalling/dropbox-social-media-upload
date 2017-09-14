@@ -11,8 +11,8 @@ The files need to be uploaded in the following format:
 	{name}-{number}.{file type}
 ```
 ## General idea for Dropbox file upload tracking
-- Init get cursor from https://dropbox.github.io/dropbox-api-v2-explorer/#files_list_folder
-- When webhook happens, call https://dropbox.github.io/dropbox-api-v2-explorer/#files_list_folder/continue using the old cursor to see what's changed
+- Init folder cursor from https://dropbox.github.io/dropbox-api-v2-explorer/#files_list_folder
+- When webhook event occurs, call https://dropbox.github.io/dropbox-api-v2-explorer/#files_list_folder/continue, using the old cursor, to see what's changed
 - Using the path from the changed files download, https://dropbox.github.io/dropbox-api-v2-explorer/#files_download
 
 ## Endpoints used for dropbox:
